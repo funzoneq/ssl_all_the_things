@@ -1,5 +1,6 @@
 ''' initiate django shizzle '''
 from django.core.management import setup_environ
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import server.settings
 
 setup_environ(server.settings)
@@ -30,8 +31,7 @@ def split_ext(ext):
 	except:
 		pass
 
-certs = Certificate.objects.all()[:60000]
-for x509 in certs:
+for x509 in Certificate.objects.raw("SELECT * FROM work_certificate LIMIT 500000, 100000"):
 	# http://www.heikkitoivonen.net/m2crypto/api/M2Crypto.X509-module.html
 	cert = M2Crypto.X509.load_cert_string(str(x509.pem))
 	#cert = M2Crypto.X509.load_cert('tumblr.pem')
@@ -78,9 +78,10 @@ for x509 in certs:
 
 		json['ext'][key] = value
 
+	print json['subject']
 	try:
 		cert_id = collection.insert(json)
-		print cert_id, json['subject']
+		print cert_id
 	except pymongo.errors.DuplicateKeyError:
 		pass
 	except:
