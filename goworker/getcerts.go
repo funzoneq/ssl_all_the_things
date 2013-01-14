@@ -43,6 +43,8 @@ func fill_workqueue(queue chan WorkTodo, host string) (int, int) {
 		fmt.Println(fmt.Sprintf("Error fetching worklist: %s", err))
 		return 0, 0
 	}
+	defer resp.Body.Close()
+
 	// Decode json
 	var m WorkMessage
 	body, err := ioutil.ReadAll(resp.Body)
@@ -51,8 +53,6 @@ func fill_workqueue(queue chan WorkTodo, host string) (int, int) {
 		return 0, 0
 	}
 	err = json.Unmarshal(body, &m)
-
-	resp.Body.Close()
 
 	// List all IP's in block
 	total := 0
@@ -82,10 +82,11 @@ func handle_cert(cert *x509.Certificate, host string) {
 	formdata.Set("pem", pemdata)
 	formdata.Set("endpoint", host)
 	target := fmt.Sprintf("http://%s/post/", serverinfo)
-	_, err := http.PostForm(target, formdata)
+	resp, err := http.PostForm(target, formdata)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("ERROR posting cert: %s", err))
 	}
+	defer resp.Body.Close()
 }
 
 func handle_hostname(done chan PTRrecord) {
@@ -106,10 +107,11 @@ func handle_hostname(done chan PTRrecord) {
 // Report block as finished and break
 func update_block_done(host string, id int) {
 	target := fmt.Sprintf("http://%s/done/%d/", host, id)
-	_, err := http.Get(target)
+	resp, err := http.Get(target)
 	if err != nil {
 	    fmt.Println("Error setting worklist as done ", err)
 	}
+	defer resp.Body.Close()
 }
 
 func lookup_PTRrecord (done chan PTRrecord, ip string) {
@@ -132,6 +134,7 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 		if err != nil {
 			continue
 		}
+		defer conn.Close()
 		conn := tls.Client(tcpconn, &config)
 		err = conn.Handshake()
 		if err != nil {
@@ -146,7 +149,6 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 		for _, cert := range state.PeerCertificates {
 			handle_cert(cert, target.Host)
 		}
-		conn.Close()
 	}
 }
 

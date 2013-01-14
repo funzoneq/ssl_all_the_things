@@ -82,7 +82,7 @@ for i in range(0, 9497163, 250000):
 
 		try:
 			cert_id = collection.insert(json)
-			print cert_id, json['subject']
+			#print cert_id, json['subject']
 		except pymongo.errors.DuplicateKeyError:
 			print "DuplicateKeyError:", json
 			pass
