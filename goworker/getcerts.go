@@ -90,7 +90,7 @@ func handle_cert(cert *x509.Certificate, host string) {
 }
 
 func handle_hostname(done chan PTRrecord) {
-	//target := fmt.Sprintf("http://%s/hostname/", serverinfo)
+	target := fmt.Sprintf("http://%s/hostname/", serverinfo)
 
 	var v PTRrecord
 	formdata := url.Values{}
@@ -98,10 +98,12 @@ func handle_hostname(done chan PTRrecord) {
 		v = <- done
 		formdata.Set(fmt.Sprintf("hostname[%d]", c), fmt.Sprintf("%s:%s", v.Host, v.IP))
 	}
-	//_, err := http.PostForm(target, formdata)
-	//if err != nil {
-	//	fmt.Println(fmt.Sprintf("ERROR posting hostname: %s", err))
-	//}
+
+	resp, err := http.PostForm(target, formdata)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("ERROR posting hostname: %s", err))
+	}
+	defer resp.Body.Close()
 }
 
 // Report block as finished and break
@@ -127,8 +129,8 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 	// Keep waiting for work
 	for {
 		target := <-in
-		//ip := strings.Split(target.Host, ":")
-		//go lookup_PTRrecord(done, ip[0])
+		ip := strings.Split(target.Host, ":")
+		go lookup_PTRrecord(done, ip[0])
 
 		tcpconn, err := net.DialTimeout("tcp", target.Host, 2*time.Second)
 		if err != nil {
@@ -196,5 +198,4 @@ func main() {
 		fmt.Println(fmt.Sprintf("%d", wqid), "done:", fmt.Sprintf("%f%%", percent), len(in), "/", cap(in), "backlog:", len(done))
 		time.Sleep(1 * time.Second)
 	}
-
 }
