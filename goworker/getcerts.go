@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	//"strings"
+	"strings"
 )
 
 // Configure the flags
@@ -138,8 +138,9 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 		if err != nil {
 			continue
 		}
-		defer conn.Close()
+		defer tcpconn.Close()
 		conn := tls.Client(tcpconn, &config)
+		defer conn.Close()
 		err = conn.Handshake()
 		if err != nil {
 			continue

@@ -1,7 +1,9 @@
 #!/bin/bash
 
+/usr/local/go/bin/go build getcerts.go
+
 for i in {1..5}
 do
-	/usr/local/go/bin/go run getcerts.go http://178.21.22.5:8000 &
+	./getcerts &
 	sleep 2
 done
