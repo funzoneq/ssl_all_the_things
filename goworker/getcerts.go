@@ -131,8 +131,8 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 	// Keep waiting for work
 	for {
 		target := <-in
-		ip := strings.Split(target.Host, ":")
-		go lookup_PTRrecord(done, ip[0])
+		//ip := strings.Split(target.Host, ":")
+		//go lookup_PTRrecord(done, ip[0])
 
 		tcpconn, err := net.DialTimeout("tcp", target.Host, 2*time.Second)
 		if err != nil {
