@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	"strings"
+	//"strings"
 )
 
 // Configure the flags
