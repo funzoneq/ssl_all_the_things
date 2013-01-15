@@ -120,6 +120,8 @@ func lookup_PTRrecord (done chan PTRrecord, ip string) {
 	hostname, err := net.LookupAddr(ip)
 	if err == nil {
 		done <- PTRrecord{hostname[0], ip}
+	} else {
+		fmt.Println("PTR lookup failed ", err)
 	}
 }
 
