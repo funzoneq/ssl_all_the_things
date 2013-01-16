@@ -136,20 +136,15 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 
 		tcpconn, err := net.DialTimeout("tcp", target.Host, 2*time.Second)
 		if err != nil {
-			tcpconn.Close()
 			continue
 		}
 		conn := tls.Client(tcpconn, &config)
 		err = conn.Handshake()
 		if err != nil {
-			conn.Close()
-			tcpconn.Close()
 			continue
 		}
 		err = conn.Handshake()
 		if err != nil {
-			conn.Close()
-			tcpconn.Close()
 			continue
 		}
 		state := conn.ConnectionState()
@@ -157,9 +152,6 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 		for _, cert := range state.PeerCertificates {
 			handle_cert(cert, target.Host)
 		}
-
-		conn.Close()
-		tcpconn.Close()
 	}
 }
 
