@@ -15,34 +15,37 @@ db = connection.ssl_all_the_things
 logger = logging.getLogger(__name__)
 
 def get_work(request):
-		task = Task.objects.filter(status="O").all()[0]
-		task.status = "IP"
-		task.started = datetime.datetime.now()
-		task.worker_id = request.META["REMOTE_ADDR"]
-		task.save()
-		return HttpResponse(json.dumps({"Id": task.id, "C": task.c, "D":task.d}))
+	task = Task.objects.filter(status="O").all()[0]
+	task.status = "IP"
+	task.started = datetime.datetime.now()
+	task.worker_id = request.META["REMOTE_ADDR"]
+	task.save()
+	return HttpResponse(json.dumps({"Id": task.id, "C": task.c, "D":task.d}))
 
+def stats(request):
+	collection = db.certs
+	return HttpResponse(collection.count())
 
 def done(request, id):
-		task = get_object_or_404(Task, id=id)
-		task.status = "F"
-		task.finished = datetime.datetime.now()
-		task.save()
-		return HttpResponse("OK")
+	task = get_object_or_404(Task, id=id)
+	task.status = "F"
+	task.finished = datetime.datetime.now()
+	task.save()
+	return HttpResponse("OK")
 
 @csrf_exempt
 def post(request):
-		collection = db.certs
+	collection = db.certs
 
-		cert = { "endpoint": request.POST["endpoint"],
-						 "subject_commonname": request.POST["commonname"],
-						 "pem": request.POST["pem"],
-						 "hash": hashlib.sha224(request.POST["pem"]).hexdigest(),
-						 "date": datetime.datetime.utcnow() }
+	cert = { "endpoint": request.POST["endpoint"],
+			 "subject_commonname": request.POST["commonname"],
+			 "pem": request.POST["pem"],
+			 "hash": hashlib.sha224(request.POST["pem"]).hexdigest(),
+			 "date": datetime.datetime.utcnow() }
 
-		cert_id = collection.insert(cert)
+	cert_id = collection.insert(cert)
 
-		return HttpResponse("OK")
+	return HttpResponse("OK")
 
 @csrf_exempt
 def posthostname(request):
