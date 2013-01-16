@@ -135,10 +135,10 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 		//go lookup_PTRrecord(done, ip[0])
 
 		tcpconn, err := net.DialTimeout("tcp", target.Host, 2*time.Second)
+		defer tcpconn.Close()
 		if err != nil {
 			continue
 		}
-		defer tcpconn.Close()
 		conn := tls.Client(tcpconn, &config)
 		defer conn.Close()
 		err = conn.Handshake()
