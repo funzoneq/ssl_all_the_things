@@ -16,9 +16,9 @@ import (
 )
 
 // Configure the flags
-var nworkers = flag.Int("n", 256, "The number of concurrent connections.")
+var nworkers = flag.Int("n", 4096, "The number of concurrent connections.")
 var serverinfo = "ssl.iskansloos.nl"
-var total, wqid, errors int
+var total, wqid int
 
 type WorkTodo struct {
 	Host   string
@@ -30,19 +30,14 @@ type WorkMessage struct {
 	C, D int
 }
 
-type PTRrecord struct {
-	Host 	string
-	IP 		string
-}
-
-func fill_workqueue(queue chan WorkTodo, host string) (int, int) {
-	target := fmt.Sprintf("http://%s/get/", host)
+func fill_workqueue(queue chan WorkTodo) (int, int) {
+	target := fmt.Sprintf("http://%s/get/", serverinfo)
 	resp, err := http.Get(target)
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Error fetching worklist: %s", err))
 		return 0, 0
 	}
-	defer resp.Body.Close()
 
 	// Decode json
 	var m WorkMessage
@@ -82,56 +77,30 @@ func handle_cert(cert *x509.Certificate, host string) {
 	formdata.Set("endpoint", host)
 	target := fmt.Sprintf("http://%s/post/", serverinfo)
 	resp, err := http.PostForm(target, formdata)
+	defer resp.Body.Close()
 	if err != nil {
 		fmt.Println(fmt.Sprintf("ERROR posting cert: %s", err))
 	}
-	defer resp.Body.Close()
-}
 
-func handle_hostname(done chan PTRrecord) {
-	target := fmt.Sprintf("http://%s/hostname/", serverinfo)
-
-	var v PTRrecord
-	formdata := url.Values{}
-	for c := 0; c < len(done); c++ {
-		v = <- done
-		formdata.Set(fmt.Sprintf("hostname[%d]", c), fmt.Sprintf("%s:%s", v.Host, v.IP))
-	}
-
-	resp, err := http.PostForm(target, formdata)
-	if err != nil {
-		fmt.Println(fmt.Sprintf("ERROR posting hostname: %s", err))
-	}
-	defer resp.Body.Close()
 }
 
 // Report block as finished and break
-func update_block_done(host string, id int) {
-	target := fmt.Sprintf("http://%s/done/%d/", host, id)
+func update_block_done(id int) {
+	target := fmt.Sprintf("http://%s/done/%d/", serverinfo, id)
 	resp, err := http.Get(target)
+	defer resp.Body.Close()
 	if err != nil {
 	    fmt.Println("Error setting worklist as done ", err)
-	}
-	defer resp.Body.Close()
-}
-
-func lookup_PTRrecord (done chan PTRrecord, ip string) {
-	hostname, err := net.LookupAddr(ip)
-	if err == nil {
-		done <- PTRrecord{hostname[0], ip}
-	} else {
-		fmt.Println("PTR lookup failed ", err)
 	}
 }
 
 // Worker function
-func getcert(in chan WorkTodo, done chan PTRrecord) {
+func getcert(in chan WorkTodo) {
 	config := tls.Config{InsecureSkipVerify: true}
+
 	// Keep waiting for work
 	for {
 		target := <-in
-		//ip := strings.Split(target.Host, ":")
-		//go lookup_PTRrecord(done, ip[0])
 
 		tcpconn, err := net.DialTimeout("tcp", target.Host, 2*time.Second)
 		if err != nil {
@@ -147,7 +116,6 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 			continue
 		}
 		state := conn.ConnectionState()
-		// TODO: store certificate
 		for _, cert := range state.PeerCertificates {
 			handle_cert(cert, target.Host)
 		}
@@ -157,45 +125,32 @@ func getcert(in chan WorkTodo, done chan PTRrecord) {
 func main() {
 	// Make the worker chanels
 	in := make(chan WorkTodo, 256*256)
-	done := make(chan PTRrecord, 256*256)
-	errors = 0
 
 	//	Start the workers
 	for i := 0; i < *nworkers; i++ {
-		go getcert(in, done)
+		go getcert(in)
 	}
 
-	// Don't update on the first run
-	update := false
+	// get work
+	total, wqid = fill_workqueue(in)
+	fmt.Println("Bucketid", wqid, "contains", total, "ip's")
 
 	// Main loop getting and handling work
 	for {
-		if len(in) == 0 {
-			total, wqid = fill_workqueue(in, serverinfo)
-			fmt.Println("Bucketid", wqid, "contains", total, "ip's")
-
-			if total == 0 && wqid == 0 {
-				errors++
-			}
-
-			if update {
-				update_block_done(serverinfo, wqid)
-			}
-
-			update = true
-		}
-
-		if len(done) > *nworkers {
-			handle_hostname(done)
-		}
-
-		if errors > 5 {
-			// weird state, exit the program
-			break
-		}
-
 		percent := float64(len(in))/float64(cap(in))*100.00
-		fmt.Println(fmt.Sprintf("%d", wqid), "done:", fmt.Sprintf("%f%%", percent), len(in), "/", cap(in), "backlog:", len(done))
+		fmt.Println(fmt.Sprintf("%d", wqid), "done:", fmt.Sprintf("%f%%", percent), len(in), "/", cap(in))
+
+		if len(in) == 0 {
+			update_block_done(wqid)
+
+			// Leave some time for the lingering connections to finish
+			time.Sleep(5 * time.Second)
+
+			// Get new work
+			total, wqid = fill_workqueue(in)
+			fmt.Println("Bucketid", wqid, "contains", total, "ip's")
+		}
+
 		time.Sleep(1 * time.Second)
 	}
 }
