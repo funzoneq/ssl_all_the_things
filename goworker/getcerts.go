@@ -16,7 +16,7 @@ import (
 )
 
 // Configure the flags
-var nworkers = flag.Int("n", 256, "The number of concurrent connections.")
+var nworkers = flag.Int("n", 1024, "The number of concurrent connections.")
 var sem = make(chan int, 65)
 var serverinfo = "ssl.iskansloos.nl"
 var total, wqid, errors int
