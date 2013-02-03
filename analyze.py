@@ -15,6 +15,16 @@ connection = pymongo.MongoClient()
 db = connection.ssl_all_the_things
 collection = db.certs
 
+def failed_cert (id, pem):
+	try:
+	    f = open("failed/%s.pem", "w")
+	    try:
+	        f.write(pem) # Write a string to a file
+	    finally:
+	        f.close()
+	except IOError:
+	    pass
+
 def split_ext(ext):
 	try:
 		save = []
@@ -46,6 +56,7 @@ for i in range(0, 9497163, 250000):
 			if "," in json['subject']:
 				json['subject'] = json['subject'].split(", ")
 		except:
+			failed_cert (str(x509.id), str(x509.pem))
 			pass
 
 		# http://www.heikkitoivonen.net/m2crypto/api/M2Crypto.X509.X509-class.html#get_fingerprint
@@ -56,6 +67,7 @@ for i in range(0, 9497163, 250000):
 			json['pub_key_len'] = len(cert.get_pubkey().get_rsa())
 			json['pub_key'] = cert.get_pubkey().get_rsa().as_pem()
 		except:
+			failed_cert (str(x509.id), str(x509.pem))
 			break
 
 		# http://www.heikkitoivonen.net/m2crypto/api/M2Crypto.ASN1.ASN1_UTCTIME-class.html
@@ -87,5 +99,6 @@ for i in range(0, 9497163, 250000):
 			print "DuplicateKeyError:", json
 			pass
 		except:
+			failed_cert (str(x509.id), str(x509.pem))
 			print "Unexpected error:", sys.exc_info()[0]
 			pass
