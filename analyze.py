@@ -30,6 +30,12 @@ def split_ext(ext):
 	except:
 		pass
 
+def CN_splitter(subject):
+	# transforms issuer = "C=US, O=GTE Corporation, OU=GTE CyberTrust Solutions, Inc., CN=GTE CyberTrust Global Root" into
+	# {'C': 'US', 'OU': 'GTE CyberTrust Solutions, Inc.', 'O': 'GTE Corporation', 'CN': 'GTE CyberTrust Global Root'}
+	fields = [i.rstrip(", ") for i in re.split(r"([A-Z]{,2})=", subject)][1:]
+	return dict( zip( fields[::2], fields[1::2] ) )
+
 for x509 in collection.find():
 	if runcount > 5:
 		break
@@ -52,16 +58,22 @@ for x509 in collection.find():
 
 		if "," in json['issuer']:
 			if "=" in json['issuer']:
-				json['issuer'] = dict(item.split("=") for item in json['issuer'].split(", "))
+				json['issuer'] = CN_splitter(json['issuer'])
 			else:
+				print "issuer: geen = gevonden"
 				json['issuer'] = json['issuer'].split(", ")
 
 		if "," in json['subject']:
 			if "=" in json['subject']:
-				json['subject'] = dict(item.split("=") for item in json['subject'].split(", "))
+				json['subject'] = CN_splitter(json['subject'])
 			else:
+				print "subject: geen = gevonden"
 				json['subject'] = json['subject'].split(", ")
+	except ValueError as e:
+		pprint (json)
+		pprint (e)
 	except:
+		pprint ( cert )
 		print "issue/subject: Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		pass
