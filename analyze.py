@@ -10,7 +10,7 @@ savedcerts = db.extensive
 
 def failed_cert (id, pem):
 	try:
-	    f = open("failed/%s.pem", "w")
+	    f = open("failed/%s.pem" % id, "w")
 	    try:
 	        f.write(pem) # Write a string to a file
 	    finally:
