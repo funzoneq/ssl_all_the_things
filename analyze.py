@@ -33,7 +33,7 @@ def split_ext(ext):
 def CN_splitter(subject):
 	# transforms issuer = "C=US, O=GTE Corporation, OU=GTE CyberTrust Solutions, Inc., CN=GTE CyberTrust Global Root" into
 	# {'C': 'US', 'OU': 'GTE CyberTrust Solutions, Inc.', 'O': 'GTE Corporation', 'CN': 'GTE CyberTrust Global Root'}
-	fields = [i.rstrip(", ") for i in re.split(r"([A-Z]{,2})=", subject)][1:]
+	fields = [i.rstrip(", ") for i in re.split(r"(\w{,15})=", subject)][1:]
 	return dict( zip( fields[::2], fields[1::2] ) )
 
 for x509 in collection.find():
@@ -105,6 +105,7 @@ for x509 in collection.find():
 		json['ext'][key] = value
 
 	try:
+		pprint (json)
 		cert_id = savedcerts.insert(json)
 		runcount += 1
 		#print cert_id, json['subject']
