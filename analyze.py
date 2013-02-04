@@ -55,17 +55,26 @@ for x509 in collection.find():
 
 		if "," in issuer:
 			json['issuer'] = CN_splitter(issuer)
+		else:
+			json['issuer'] = issuer
 
 		if "," in subject:
 			json['subject'] = CN_splitter(subject)
-	except ValueError as e:
-		pprint (json)
-		pprint (e)
-	except NameError as e:
-		pprint (json)
-		pprint (e)
+		else:
+			json['subject'] = subject
+	#except TypeError as e:
+	#	pprint (json)
+	#	pprint (e)
+	#except ValueError as e:
+	#	pprint (json)
+	#	pprint (e)
+	#except NameError as e:
+	#	pprint (json)
+	#	pprint (e)
+	#except M2Crypto.BIO.BIOError as e:
+	#	pprint (json)
+	#	pprint (e)
 	except:
-		pprint ( cert )
 		print "issue/subject: Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		pass
@@ -105,13 +114,14 @@ for x509 in collection.find():
 		json['ext'][key] = value
 
 	try:
-		pprint (json)
 		cert_id = savedcerts.insert(json)
 		runcount += 1
 		#print cert_id, json['subject']
 	except pymongo.errors.DuplicateKeyError:
 		print "DuplicateKeyError:", json
 		pass
+	#except pymongo.errors.InvalidStringData as e:
+	#	pprint (e)
 	except:
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		print "save: Unexpected error:", sys.exc_info()[0]
