@@ -7,6 +7,7 @@ connection = pymongo.MongoClient()
 db = connection.ssl_all_the_things
 collection = db.certs
 savedcerts = db.extensive
+runcount = 0
 
 def failed_cert (id, pem):
 	try:
@@ -30,6 +31,9 @@ def split_ext(ext):
 		pass
 
 for x509 in collection.find():
+	if runcount > 5:
+		break
+
 	json = {}
 	json['date'] = x509['date']
 	json['endpoint'] = x509['endpoint']
@@ -47,11 +51,18 @@ for x509 in collection.find():
 		json['subject'] = cert.get_subject().as_text()
 
 		if "," in json['issuer']:
-			json['issuer'] = dict(item.split("=") for item in json['issuer'].split(", "))
+			if "=" in json['issuer']:
+				json['issuer'] = dict(item.split("=") for item in json['issuer'].split(", "))
+			else:
+				json['issuer'] = json['issuer'].split(", ")
 
 		if "," in json['subject']:
-			json['subject'] = dict(item.split("=") for item in json['subject'].split(", "))
+			if "=" in json['subject']:
+				json['subject'] = dict(item.split("=") for item in json['subject'].split(", "))
+			else:
+				json['subject'] = json['subject'].split(", ")
 	except:
+		print "Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		pass
 
@@ -63,6 +74,7 @@ for x509 in collection.find():
 		json['pub_key_len'] = len(cert.get_pubkey().get_rsa())
 		json['pub_key'] = cert.get_pubkey().get_rsa().as_pem()
 	except:
+		print "Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		break
 
@@ -91,6 +103,7 @@ for x509 in collection.find():
 	try:
 		#cert_id = collection.insert(json)
 		cert_id = savedcerts.insert(json)
+		runcount += 1
 		#print cert_id, json['subject']
 	except pymongo.errors.DuplicateKeyError:
 		print "DuplicateKeyError:", json
