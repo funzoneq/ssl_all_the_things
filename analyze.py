@@ -37,9 +37,6 @@ def CN_splitter(subject):
 	return dict( zip( fields[::2], fields[1::2] ) )
 
 for x509 in collection.find():
-	if runcount > 15:
-		break
-
 	json = {}
 	json['date'] = x509['date']
 	json['endpoint'] = x509['endpoint']
@@ -108,7 +105,6 @@ for x509 in collection.find():
 		json['ext'][key] = value
 
 	try:
-		#cert_id = collection.insert(json)
 		cert_id = savedcerts.insert(json)
 		runcount += 1
 		#print cert_id, json['subject']
