@@ -62,7 +62,7 @@ for x509 in collection.find():
 			else:
 				json['subject'] = json['subject'].split(", ")
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		print "issue/subject: Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		pass
 
@@ -74,7 +74,7 @@ for x509 in collection.find():
 		json['pub_key_len'] = len(cert.get_pubkey().get_rsa())
 		json['pub_key'] = cert.get_pubkey().get_rsa().as_pem()
 	except:
-		print "Unexpected error:", sys.exc_info()[0]
+		print "pub_key: Unexpected error:", sys.exc_info()[0]
 		failed_cert (str(x509['_id']), str(x509['pem']))
 		break
 
@@ -110,5 +110,5 @@ for x509 in collection.find():
 		pass
 	except:
 		failed_cert (str(x509['_id']), str(x509['pem']))
-		print "Unexpected error:", sys.exc_info()[0]
+		print "save: Unexpected error:", sys.exc_info()[0]
 		pass
