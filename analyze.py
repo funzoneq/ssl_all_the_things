@@ -1,4 +1,4 @@
-import M2Crypto, sys, pymongo
+import M2Crypto, sys, pymongo, re
 import simplejson as json
 from datetime import datetime
 from pprint import pprint
@@ -37,7 +37,7 @@ def CN_splitter(subject):
 	return dict( zip( fields[::2], fields[1::2] ) )
 
 for x509 in collection.find():
-	if runcount > 5:
+	if runcount > 15:
 		break
 
 	json = {}
@@ -53,23 +53,18 @@ for x509 in collection.find():
 
 	# http://www.heikkitoivonen.net/m2crypto/api/M2Crypto.X509.X509-class.html
 	try:
-		json['issuer'] = cert.get_issuer().as_text()
-		json['subject'] = cert.get_subject().as_text()
+		issuer = cert.get_issuer().as_text()
+		subject = cert.get_subject().as_text()
 
-		if "," in json['issuer']:
-			if "=" in json['issuer']:
-				json['issuer'] = CN_splitter(json['issuer'])
-			else:
-				print "issuer: geen = gevonden"
-				json['issuer'] = json['issuer'].split(", ")
+		if "," in issuer:
+			json['issuer'] = CN_splitter(issuer)
 
-		if "," in json['subject']:
-			if "=" in json['subject']:
-				json['subject'] = CN_splitter(json['subject'])
-			else:
-				print "subject: geen = gevonden"
-				json['subject'] = json['subject'].split(", ")
+		if "," in subject:
+			json['subject'] = CN_splitter(subject)
 	except ValueError as e:
+		pprint (json)
+		pprint (e)
+	except NameError as e:
 		pprint (json)
 		pprint (e)
 	except:
